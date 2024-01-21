@@ -164,6 +164,11 @@ executable('swaylock',
 	install: true
 )
 
+executable('swaylockd',
+	'swaylockd.c',
+	install: true
+)
+
 install_data(
 	'pam/swaylock',
 	install_dir: sysconfdir + '/pam.d/'
