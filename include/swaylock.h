@@ -81,11 +81,17 @@ struct swaylock_args {
 	uint32_t password_grace_period;
 	bool password_grace_no_mouse;
 	bool password_grace_no_touch;
+
+	char *text_cleared;
+	char *text_caps_lock;
+	char *text_verifying;
+	char *text_wrong;
 };
 
 struct swaylock_password {
 	size_t len;
-	char buffer[1024];
+	size_t buffer_len;
+	char *buffer;
 };
 
 struct swaylock_state {
@@ -102,8 +108,6 @@ struct swaylock_state {
 	struct wl_list surfaces;
 	struct wl_list images;
 	cairo_surface_t *indicator_image;
-	int indicator_image_width;
-	int indicator_image_height;
 	struct swaylock_args args;
 	struct swaylock_password password;
 	struct swaylock_xkb xkb;
@@ -113,24 +117,24 @@ struct swaylock_state {
 	int failed_attempts;
 	size_t n_screenshots_done;
 	bool run_display;
-	struct zxdg_output_manager_v1 *zxdg_output_manager;
 	struct ext_session_lock_manager_v1 *ext_session_lock_manager_v1;
 	struct ext_session_lock_v1 *ext_session_lock_v1;
 };
 
 struct swaylock_surface {
 	cairo_surface_t *image;
+	cairo_surface_t *scaled_image;
 	struct {
 		uint32_t format, width, height, stride;
 		enum wl_output_transform transform;
 		void *data;
 		cairo_surface_t *original_image;
+		cairo_surface_t *scaled_image;
 		struct swaylock_image *image;
 	} screencopy;
 	struct swaylock_state *state;
 	struct wl_output *output;
 	uint32_t output_global_name;
-	struct zxdg_output_v1 *xdg_output;
 	struct wl_surface *surface;
 	struct wl_surface *child; // surface made into subsurface
 	struct wl_subsurface *subsurface;
@@ -139,7 +143,6 @@ struct swaylock_surface {
 	struct ext_session_lock_surface_v1 *ext_session_lock_surface_v1;
 	struct pool_buffer buffers[2];
 	struct pool_buffer indicator_buffers[2];
-	struct pool_buffer *current_buffer;
 	struct swaylock_fade fade;
 	int events_pending;
 	bool configured;
@@ -168,7 +171,6 @@ void swaylock_handle_touch(struct swaylock_state *state);
 void render_frame_background(struct swaylock_surface *surface, bool commit);
 void render_background_fade(struct swaylock_surface *surface, uint32_t time);
 void render_frame(struct swaylock_surface *surface);
-void render_frames(struct swaylock_state *state);
 void damage_surface(struct swaylock_surface *surface);
 void damage_state(struct swaylock_state *state);
 void clear_password_buffer(struct swaylock_password *pw);

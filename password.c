@@ -22,13 +22,14 @@ void clear_buffer(char *buf, size_t size) {
 }
 
 void clear_password_buffer(struct swaylock_password *pw) {
-	clear_buffer(pw->buffer, sizeof(pw->buffer));
+	clear_buffer(pw->buffer, pw->buffer_len);
 	pw->len = 0;
 }
 
 static bool backspace(struct swaylock_password *pw) {
 	if (pw->len != 0) {
-		pw->buffer[--pw->len] = 0;
+		pw->len -= utf8_last_size(pw->buffer);
+		pw->buffer[pw->len] = 0;
 		return true;
 	}
 	return false;
@@ -36,7 +37,7 @@ static bool backspace(struct swaylock_password *pw) {
 
 static void append_ch(struct swaylock_password *pw, uint32_t codepoint) {
 	size_t utf8_size = utf8_chsize(codepoint);
-	if (pw->len + utf8_size + 1 >= sizeof(pw->buffer)) {
+	if (pw->len + utf8_size + 1 >= pw->buffer_len) {
 		// TODO: Display error
 		return;
 	}

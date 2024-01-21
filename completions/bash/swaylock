@@ -2,7 +2,7 @@
 
 _swaylock()
 {
-  local cur prev
+  local cur prev short long scaling
   _get_comp_words_by_ref -n : cur prev
 
   short=(
@@ -74,10 +74,14 @@ _swaylock()
     --separator-color
     --show-failed-attempts
     --show-keyboard-layout
+    --text-caps-lock
     --text-caps-lock-color
+    --text-clear
     --text-clear-color
     --text-color
+    --text-ver
     --text-ver-color
+    --text-wrong
     --text-wrong-color
     --tiling
     --version

@@ -52,6 +52,9 @@ The main new features compared to upstream swaylock are:
 	  to a mouse event, and `--grace-no-touch` to not unlock as a response to
 	  a touch event.
 * `--fade-in <seconds>` to make the lock screen fade in.
+* `--indicator-image <path>` to display an image inside the indicator.
+* `--text-clear <string>`, `--text-caps-lock <string>`, `--text-ver <string>`,
+  and `--text-wrong <string>` to change the texts displayed inside the indicator.
 * Various effects which can be applied to the background image
 	* `--effect-blur <radius>x<times>`: Blur the image (thanks to yvbbrjdr's
 	  fast box blur algorithm in
@@ -79,6 +82,8 @@ The following table shows the relation between the swaylock-effect and swaylock 
 | 1.6-2            | 1.5-9-g[235b925d](https://github.com/swaywm/swaylock/tree/235b925df7e1bb82d98f1ac8c02e8f85d0a54ee9) |
 | 1.6-3            | 1.5-9-g[235b925d](https://github.com/swaywm/swaylock/tree/235b925df7e1bb82d98f1ac8c02e8f85d0a54ee9) |
 | 1.6.10           | [1.6](https://github.com/swaywm/swaylock/tree/1.6)                                                  |
+| 1.6.11           | [1.6](https://github.com/swaywm/swaylock/tree/1.6)                                                  |
+| 1.7.0.0          | 1.7-8-g[b4e3a2b](https://github.com/swaywm/swaylock/tree/10ab8b274020a9323413d093c45f13490929fb81)  |
 
 
 ## Installation
@@ -87,13 +92,16 @@ The following table shows the relation between the swaylock-effect and swaylock 
 
 * Alpine Linux: [swaylock-effects](https://pkgs.alpinelinux.org/packages?name=swaylock-effects)
 * Arch Linux (AUR): [swaylock-effects](https://aur.archlinux.org/packages/swaylock-effects/) / [swaylock-effects-git](https://aur.archlinux.org/packages/swaylock-effects-git/)
+* Fedora (Copr): [swaylock-effects](https://copr.fedorainfracloud.org/coprs/trs-sod/swaylock-effects)
+* FreeBSD: [swaylock-effects](https://www.freshports.org/x11/swaylock-effects/)
+* Guix: [swaylock-effects](https://packages.guix.gnu.org/packages/swaylock-effects)
+* Nix: [swaylock-effects](https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/window-managers/sway/lock-effects.nix)
 
 The original [mortie/swaylock-effects](https://github.com/mortie/swaylock-effects) (now unmaintained)
 has been packaged for:
 
 * Fedora (Copr): [swaylock-effects](https://copr.fedorainfracloud.org/coprs/eddsalkield/swaylock-effects/)
   (thanks to Edd Salkield)
-* FreeBSD: [swaylock-effects](https://www.freshports.org/x11/swaylock-effects/)
 * Gentoo (GURU overlay): [swaylock-effects](https://gpo.zugaina.org/Overlays/guru/gui-apps/swaylock-effects)
 * T2 SDE: [swaylock-effects](https://t2sde.org/packages/swaylock-effects)
 
@@ -152,7 +160,7 @@ the same color.
 This effect scales the internal buffer. This has a few uses:
 
 * Use `--effect-scale` in combination with `--scaling` to create a zoom effect:
-  `--effect-scale 1.1 --scaling center`
+  `--efect-scale 1.1 --scaling center`
 * Speed up other effects by making the resolution smaller: with
   `--effect-scale 0.5 --effect-blur 7x5 --effect-scale 2`, swaylock-effect needs to blur
   only 1/4 as many pixels.
@@ -182,7 +190,7 @@ Base and factor should be between 0 and 1.
 	* Default: The size of the image file.
 * `<gravity>`: Optional. Determine which point of the image is placed at `<position>`.
 	* Possible values: `center`, `north`, `south`, `west`, `east`,
-	  `northwest`, `northeast`, `southwest`, `southeast`.
+	  `northwest`, `northeast`, southwest`, `southeast`.
 	* With a `<gravity>` of `northwest`, `<position>` gives the location of the top/left
 	  corner of the image; with `southeast`, `<position>` controls the bottom/right corner,
 	  `center` controls the middle of the image, etc.

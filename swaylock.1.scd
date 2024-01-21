@@ -103,7 +103,7 @@ Locks your Wayland session.
 	_solid\_color_. Use _solid\_color_ to display only the background color, even
 	if a background image is specified.
 
-*-t, --tiling*
+*-T, --tiling*
 	Same as --scaling=tile.
 
 *-c, --color* <rrggbb[aa]>
@@ -214,14 +214,26 @@ Locks your Wayland session.
 *--text-color* <rrggbb[aa]>
 	Sets the color of the text.
 
+*--text-clear* <string>
+	Sets the string displayed when the password is cleared.
+
 *--text-clear-color* <rrggbb[aa]>
 	Sets the color of the text when cleared.
+
+*--text-caps-lock* <string>
+	Sets the string displayed when Caps Lock is active.
 
 *--text-caps-lock-color* <rrggbb[aa]>
 	Sets the color of the text when Caps Lock is active.
 
+*--text-ver* <string>
+	Sets the string displayed when the password is being verified.
+
 *--text-ver-color* <rrggbb[aa]>
 	Sets the color of the text when verifying.
+
+*--text-wrong* <string>
+	Sets the string displayed when the password is wrong.
 
 *--text-wrong-color* <rrggbb[aa]>
 	Sets the color of the text when invalid.
@@ -255,9 +267,14 @@ or an *uint32\_t swaylock_pixel(uint32\_t pix, int x, int y, int width, int heig
 *--time-effects*
 	Measure the time it takes to run each effect.
 
+# SIGNALS
+
+*SIGUSR1*
+	Unlock the screen and exit.
+
 # AUTHORS
 
-Maintained by Martin Dørum, forked from upstream Swaylock which is maintained
-by Drew DeVault.
+Maintained by Jakub Jirutka. This is a fork of the upstream Swaylock, which is
+maintained by Simon Ser, and it was originally forked by Martin Dørum.
 For more information about swaylock-effects development, see
-https://github.com/mortie/swaylock-effects.
+https://github.com/jirutka/swaylock-effects.

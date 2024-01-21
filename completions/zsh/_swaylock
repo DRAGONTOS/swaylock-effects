@@ -51,10 +51,14 @@ _arguments -s \
 	'(--separator-color)'--separator-color'[Sets the color of the lines that separate highlight segments]:color:' \
 	'(--show-failed-attempts -F)'{--show-failed-attempts,-F}'[Show current count of failed authentication attempts]' \
 	'(--show-keyboard-layout -k)'{--show-keyboard-layout,-k}'[Display the current xkb layout while typing]' \
+	'(--text-caps-lock)'--text-caps-lock'[Sets the string displayed when Caps Lock is active]' \
 	'(--text-caps-lock-color)'--text-caps-lock-color'[Sets the color of the text when Caps Lock is active]:color:' \
+	'(--text-clear)'--text-clear'[Sets the string displayed when the password is cleared]' \
 	'(--text-clear-color)'--text-clear-color'[Sets the color of the text when cleared]:color:' \
 	'(--text-color)'--text-color'[Sets the color of the text]:color:' \
+	'(--text-ver)'--text-ver'[Sets the string displayed when the password is being verified]' \
 	'(--text-ver-color)'--text-ver-color'[Sets the color of the text when verifying]:color:' \
+	'(--text-wrong)'--text-wrong'[Sets the string displayed when the password is wrong]' \
 	'(--text-wrong-color)'--text-wrong-color'[Sets the color of the text when invalid]:color:' \
-	'(--tiling -t)'{--tiling,-t}'[Same as --scaling=tile]' \
+	'(--tiling -T)'{--tiling,-T}'[Same as --scaling=tile]' \
 	'(--version -v)'{--version,-v}'[Show the version number and quit]'

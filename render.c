@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <time.h>
 #include <locale.h>
@@ -77,36 +78,49 @@ void render_frame_background(struct swaylock_surface *surface, bool commit) {
 		return; // not yet configured
 	}
 
-	surface->current_buffer = get_next_buffer(state->shm,
+	struct pool_buffer *buffer = get_next_buffer(state->shm,
 			surface->buffers, buffer_width, buffer_height);
-	if (surface->current_buffer == NULL) {
+	if (buffer == NULL) {
 		return;
 	}
 
-	cairo_t *cairo = surface->current_buffer->cairo;
+	cairo_t *cairo = buffer->cairo;
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 
 	cairo_save(cairo);
 	cairo_set_operator(cairo, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_u32(cairo, state->args.colors.background);
+	cairo_pattern_set_filter(cairo_get_source(cairo), CAIRO_FILTER_BILINEAR);
 	cairo_paint(cairo);
 	if (surface->image && state->args.mode != BACKGROUND_MODE_SOLID_COLOR) {
 		cairo_set_operator(cairo, CAIRO_OPERATOR_OVER);
 		if (fade_is_complete(&surface->fade)) {
-			render_background_image(cairo, surface->image,
-				state->args.mode, buffer_width, buffer_height, 1);
+			if (!surface->scaled_image) {
+				surface->scaled_image =
+					scale_background_image(surface->image, state->args.mode,
+						buffer_width, buffer_height);
+			}
+			render_background_image(cairo, surface->scaled_image, 1);
 		} else {
-			render_background_image(cairo, surface->screencopy.original_image,
-				state->args.mode, buffer_width, buffer_height, 1);
-			render_background_image(cairo, surface->image,
-				state->args.mode, buffer_width, buffer_height, surface->fade.alpha);
+			if (!surface->screencopy.scaled_image) {
+				surface->screencopy.scaled_image =
+					scale_background_image(surface->screencopy.original_image,
+						 state->args.mode, buffer_width, buffer_height);
+			}
+			render_background_image(cairo, surface->screencopy.scaled_image, 1);
+			if (!surface->scaled_image) {
+				surface->scaled_image =
+					scale_background_image(surface->image, state->args.mode,
+						buffer_width, buffer_height);
+			}
+			render_background_image(cairo, surface->scaled_image, surface->fade.alpha);
 		}
 	}
 	cairo_restore(cairo);
 	cairo_identity_matrix(cairo);
 
 	wl_surface_set_buffer_scale(surface->surface, surface->scale);
-	wl_surface_attach(surface->surface, surface->current_buffer->buffer, 0, 0);
+	wl_surface_attach(surface->surface, buffer->buffer, 0, 0);
 	wl_surface_damage_buffer(surface->surface, 0, 0, INT32_MAX, INT32_MAX);
 	if (commit) {
 		wl_surface_commit(surface->surface);
@@ -158,17 +172,13 @@ void render_frame(struct swaylock_surface *surface) {
 
 	wl_subsurface_set_position(surface->subsurface, subsurf_xpos, subsurf_ypos);
 
-	surface->current_buffer = get_next_buffer(state->shm,
+	struct pool_buffer *buffer = get_next_buffer(state->shm,
 			surface->indicator_buffers, buffer_width, buffer_height);
-	if (surface->current_buffer == NULL) {
+	if (buffer == NULL) {
 		return;
 	}
 
-	// Hide subsurface until we want it visible
-	wl_surface_attach(surface->child, NULL, 0, 0);
-	wl_surface_commit(surface->child);
-
-	cairo_t *cairo = surface->current_buffer->cairo;
+	cairo_t *cairo = buffer->cairo;
 	cairo_set_antialias(cairo, CAIRO_ANTIALIAS_BEST);
 	cairo_font_options_t *fo = cairo_font_options_create();
 	cairo_font_options_set_hint_style(fo, CAIRO_HINT_STYLE_FULL);
@@ -200,10 +210,10 @@ void render_frame(struct swaylock_surface *surface) {
 	if (state->args.indicator ||
 			(upstream_show_indicator && state->auth_state != AUTH_STATE_GRACE)) {
 		// Draw indicator image
-		cairo_surface_t * image = state->indicator_image;
+		cairo_surface_t *image = state->indicator_image;
 		if (image) {
-			int height = state->indicator_image_height;
-			int width = state->indicator_image_width;
+			int height = cairo_image_surface_get_height(image);
+			int width = cairo_image_surface_get_width(image);
 			int smallest = MIN(height, width);
 			double radius = arc_radius - arc_thickness * 0.5;
 			double scale = radius * 2 / smallest;
@@ -215,15 +225,11 @@ void render_frame(struct swaylock_surface *surface) {
 					buffer_diameter * 0.5,
 					radius,
 					0, 2 * M_PI);
-
 			// Scale cairo to make image fit the indicator
 			cairo_scale(cairo, scale, scale);
-
 			cairo_set_source_surface(cairo, image, offset, offset);
-
 			// Scale cairo back
 			cairo_scale(cairo, 1 / scale, 1 / scale);
-
 			cairo_fill(cairo);
 		}
 
@@ -260,20 +266,20 @@ void render_frame(struct swaylock_surface *surface) {
 		cairo_set_font_size(cairo, font_size);
 		switch (state->auth_state) {
 		case AUTH_STATE_VALIDATING:
-			text = "verifying";
+			text = state->args.text_verifying;
 			break;
 		case AUTH_STATE_INVALID:
-			text = "wrong";
+			text = state->args.text_wrong;
 			break;
 		case AUTH_STATE_CLEAR:
-			text = "cleared";
+			text = state->args.text_cleared;
 			break;
 		case AUTH_STATE_INPUT:
 		case AUTH_STATE_INPUT_NOP:
 		case AUTH_STATE_BACKSPACE:
 			// Caps Lock has higher priority
 			if (state->xkb.caps_lock && state->args.show_caps_lock_text) {
-				text = "Caps Lock";
+				text = state->args.text_caps_lock;
 			} else if (state->args.show_failed_attempts &&
 					state->failed_attempts > 0) {
 				if (state->failed_attempts > 999) {
@@ -318,8 +324,8 @@ void render_frame(struct swaylock_surface *surface) {
 			double x, y;
 			cairo_text_extents(cairo, text, &extents);
 			cairo_font_extents(cairo, &fe);
-			x = (buffer_width / 2) - (extents.x_advance / 2);
-
+			x = (buffer_width / 2) -
+				(extents.width / 2 + extents.x_bearing);
 			y = (buffer_diameter / 2) +
 				(fe.height / 2 - fe.descent);
 
@@ -340,8 +346,8 @@ void render_frame(struct swaylock_surface *surface) {
 
 			cairo_text_extents(cairo, text_l1, &extents_l1);
 			cairo_font_extents(cairo, &fe_l1);
-			x_l1 = (buffer_width / 2) - (extents_l1.x_advance / 2);
-
+			x_l1 = (buffer_width / 2) -
+				(extents_l1.width / 2 + extents_l1.x_bearing);
 			y_l1 = (buffer_diameter / 2) +
 				(fe_l1.height / 2 - fe_l1.descent) - arc_radius / 10.0f;
 
@@ -355,8 +361,8 @@ void render_frame(struct swaylock_surface *surface) {
 			cairo_set_font_size(cairo, arc_radius / 6.0f);
 			cairo_text_extents(cairo, text_l2, &extents_l2);
 			cairo_font_extents(cairo, &fe_l2);
-			x_l2 = (buffer_width / 2) - (extents_l2.x_advance / 2);
-
+			x_l2 = (buffer_width / 2) -
+				(extents_l2.width / 2 + extents_l2.x_bearing);
 			y_l2 = (buffer_diameter / 2) +
 				(fe_l2.height / 2 - fe_l2.descent) + arc_radius / 3.5f;
 
@@ -469,7 +475,7 @@ void render_frame(struct swaylock_surface *surface) {
 	new_width += surface->scale - (new_width % surface->scale);
 
 	if (buffer_width != new_width || buffer_height != new_height) {
-		destroy_buffer(surface->current_buffer);
+		destroy_buffer(buffer);
 		surface->indicator_width = new_width;
 		surface->indicator_height = new_height;
 		render_frame(surface);
@@ -477,16 +483,9 @@ void render_frame(struct swaylock_surface *surface) {
 	}
 
 	wl_surface_set_buffer_scale(surface->child, surface->scale);
-	wl_surface_attach(surface->child, surface->current_buffer->buffer, 0, 0);
+	wl_surface_attach(surface->child, buffer->buffer, 0, 0);
 	wl_surface_damage_buffer(surface->child, 0, 0, INT32_MAX, INT32_MAX);
 	wl_surface_commit(surface->child);
 
 	wl_surface_commit(surface->surface);
-}
-
-void render_frames(struct swaylock_state *state) {
-	struct swaylock_surface *surface;
-	wl_list_for_each(surface, &state->surfaces, link) {
-		render_frame(surface);
-	}
 }
